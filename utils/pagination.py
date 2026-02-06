@@ -20,7 +20,8 @@ class PaginationMeta:
     def base_url(self) -> str:
         # Builds full URL without any query params
         # e.g. http://localhost:8000/api/v1/exercises
-        return str(self.request.base_url).rstrip("/") + self.request.url.path
+        return self.request.url.path
+        # return str(self.request.base_url).rstrip("/") + self.request.url.path
 
     @property
     def current_page(self) -> int:
