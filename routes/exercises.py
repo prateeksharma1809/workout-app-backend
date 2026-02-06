@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query, Request
-from database import get_connection, release_connection
+from database import get_connection, get_total_count, release_connection
 from mappers.exercise_mapper import map_exercises
 from utils.pagination import PaginationMeta, build_response
 
@@ -15,22 +15,17 @@ def get_exercises(
     conn = get_connection()
     try:
         cur = conn.cursor()
+        total = get_total_count(conn)
+
         cur.execute(
-            """
-            SELECT *, COUNT(*) OVER() as total_count
-            FROM exercises 
-            ORDER BY exercise_id 
-            LIMIT %s OFFSET %s;
-            """,
+            "SELECT * FROM exercises e join equipments eq on e.equipment_id = eq.id ORDER BY exercise_id LIMIT %s OFFSET %s;",
             (limit, offset),
         )
-        rows = cur.fetchall()
+        data = cur.fetchall()
+        cur.close()
         cur.close()
     finally:
         release_connection(conn)
-
-    total = rows[0]["total_count"] if rows else 0
-    data = [{k: v for k, v in row.items() if k != "total_count"} for row in rows]
 
     meta = PaginationMeta(
         total=total,
@@ -55,26 +50,24 @@ def search_exercises(
         search_query = f"%{q}%"
         cur.execute(
             """
-            SELECT *, COUNT(*) OVER() as total_count
-            FROM exercises
+            SELECT *
+            FROM exercises e join equipments eq on e.equipment_id = eq.id
             WHERE 
                 name ILIKE %s OR
                 %s = ANY(target_muscles) OR
                 %s = ANY(body_parts) OR
-                %s = ANY(equipments) OR
+                %s ILIKE equipment OR
                 %s = ANY(secondary_muscles)
             ORDER BY exercise_id
             LIMIT %s OFFSET %s;
             """,
             (search_query, q, q, q, q, limit, offset),
         )
-        rows = cur.fetchall()
+        data = cur.fetchall()
+        total = get_total_count(conn)
         cur.close()
     finally:
         release_connection(conn)
-
-    total = rows[0]["total_count"] if rows else 0
-    data = [{k: v for k, v in row.items() if k != "total_count"} for row in rows]
 
     meta = PaginationMeta(
         total=total,

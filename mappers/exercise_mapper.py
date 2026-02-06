@@ -5,7 +5,7 @@ def map_exercise(row: dict) -> dict:
         "gifUrl": row["gif_url"],
         "targetMuscles": row["target_muscles"],
         "bodyParts": row["body_parts"],
-        "equipments": row["equipments"],
+        "equipments": row["equipment"],
         "secondaryMuscles": row["secondary_muscles"],
         "instructions": row["instructions"],
     }
